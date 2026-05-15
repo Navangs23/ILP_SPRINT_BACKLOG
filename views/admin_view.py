@@ -1,5 +1,7 @@
 from views.main_view import print_header, display_message, get_validated_input
-from controllers.validation import validate_time_format
+from controllers.validation import validate_time_format, validate_name , validate_train_number
+from controllers.validation import validate_datetime_format, is_after
+from datetime import datetime
 
 def admin_menu():
     print_header("Admin Dashboard")
@@ -20,23 +22,73 @@ def get_train_details(TRAINS):
             return False
         return True
 
-    train_no = get_validated_input("Train Number (e.g. 12345): ", validate_unique, "Invalid Train Number.", required=True)
-    name = get_validated_input("Train Name (e.g. Express Train): ", required=True)
+    train_no = get_validated_input("Train Number (e.g. 12345): ", validate_train_number, "Invalid Train Number.", required=True)
+    name = get_validated_input("Train Name (e.g. Express Train): ", validate_name, "Name must contain only alphabets and spaces.", required=True)
     origin = get_validated_input("Origin Station (e.g. Dadar): ", required=True)
     destination = get_validated_input("Destination Station (e.g. Surat): ", required=True)
     
     print("\n--- Schedule Details ---")
     schedule = {}
+    base_datetime = None
+    last_departure = None
     while True:
-        station = get_validated_input("Enter Station Name (or type 'done' to finish): ", required=True)
+        station = get_validated_input("Enter Station Name (or type 'done' to finish): ", validate_name, "Station name must contain only alphabets and spaces.", required=True)
         if station.lower() == 'done':
             if len(schedule) < 2:
                 print("\n[ERROR] At least two stations (origin and destination) are required.")
                 continue
             break
-        arrival = get_validated_input(f"Arrival time at {station} (HH:MM): ", validate_time_format, "Invalid time format. Use HH:MM.", required=True)
-        departure = get_validated_input(f"Departure time at {station} (HH:MM): ", validate_time_format, "Invalid time format. Use HH:MM.", required=True)
-        schedule[station] = {'arrival': arrival, 'departure': departure}
+                
+        
+        arrival_str = get_validated_input(
+                f"Arrival at {station} (DD-MM-YYYY HH:MM): ",
+                validate_datetime_format,
+                "Invalid format.",
+                required=True
+            )
+
+        arrival_dt = datetime.strptime(arrival_str, "%d-%m-%Y %H:%M")   
+        if base_datetime is None:
+                base_datetime = arrival_dt
+
+        day_offset_arr = (arrival_dt.date() - base_datetime.date()).days
+        arrival_time = arrival_dt.strftime("%H:%M")
+
+        
+        
+        if last_departure is not None:
+            prev_dt = datetime.strptime(last_departure, "%d-%m-%Y %H:%M")
+            if arrival_dt <= prev_dt:
+                print("\n[ERROR] Arrival must be after previous departure.")
+                continue
+
+        departure_str = get_validated_input(
+                f"Departure from {station} (DD-MM-YYYY HH:MM): ",
+                validate_datetime_format,
+                "Invalid format.",
+                required=True
+            )
+
+        
+        departure_dt = datetime.strptime(departure_str, "%d-%m-%Y %H:%M")
+        if departure_dt <= arrival_dt:
+            print("\n[ERROR] Departure must be after arrival.")
+            continue
+
+        
+        day_offset_dep = (departure_dt.date() - base_datetime.date()).days
+        departure_time = departure_dt.strftime("%H:%M")
+
+
+        
+        schedule[station] = {
+                'arrival_time': arrival_time,
+                'arrival_day': day_offset_arr,
+                'departure_time': departure_time,
+                'departure_day': day_offset_dep
+            }
+
+        last_departure = departure_str
         
     def validate_seats(n): return n.isdigit() and int(n) >= 0
     total_ac_seats = int(get_validated_input("Total AC Seats (e.g. 50): ", validate_seats, "Must be a positive integer.", required=True))

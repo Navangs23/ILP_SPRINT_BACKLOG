@@ -1,5 +1,7 @@
 from views.main_view import print_header, get_validated_input
 from controllers.validation import validate_name, validate_phone
+from datetime import datetime, timedelta
+
 
 def customer_menu():
     print_header("Customer Dashboard")
@@ -49,16 +51,34 @@ def get_search_criteria():
     date_str = get_validated_input("Travel Date (YYYY-MM-DD): ", check_date, "Invalid date.", required=True)
     return origin, destination, date_str
 
-def display_trains(trains):
+def display_trains(trains, travel_date):
     print_header("Available Trains")
     if not trains:
         print("No trains available for the given criteria.")
         return
+    travel_base = datetime.strptime(travel_date, "%Y-%m-%d")    
     for t in trains:
+        origin_data = t['schedule'][t['origin']]
+        dest_data = t['schedule'][t['destination']]
+        origin_dt = travel_base + timedelta(days=origin_data['departure_day'])
+        origin_dt = origin_dt.replace(
+                hour=int(origin_data['departure_time'].split(':')[0]),
+                minute=int(origin_data['departure_time'].split(':')[1])
+            )
+
+        dest_dt = travel_base + timedelta(days=dest_data['arrival_day'])  
+        dest_dt = dest_dt.replace(
+                        hour=int(dest_data['arrival_time'].split(':')[0]),
+                        minute=int(dest_data['arrival_time'].split(':')[1])
+                    )
         print(f"Train No: {t['train_no']} | Name: {t['name']}")
-        print(f"Origin: {t['origin']} (Dep: {t['schedule'][t['origin']]['departure']}) -> Destination: {t['destination']} (Arr: {t['schedule'][t['destination']]['arrival']})")
+        print(f"Origin: {t['origin']} (Dep: {origin_dt.strftime('%d-%m-%Y %H:%M')}) "
+                    f"-> Destination: {t['destination']} (Arr: {dest_dt.strftime('%d-%m-%Y %H:%M')})")
         print(f"Available Seats -> AC: {t['available_ac_seats']}, Sleeper: {t['available_sl_seats']}")
         print("-" * 40)
+
+
+
 
 def get_booking_details(TRAINS):
     print_header("Book Ticket")
