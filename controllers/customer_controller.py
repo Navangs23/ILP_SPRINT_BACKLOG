@@ -69,7 +69,7 @@ class CustomerController:
             if origin in schedule and destination in schedule:
                 available_trains.append(train)
                 
-        display_trains(available_trains)
+        display_trains(available_trains, date_str)
 
     def book_ticket(self):
         train_no, travel_date, origin, destination, seat_class, no_of_tickets = get_booking_details(TRAINS)

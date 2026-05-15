@@ -7,6 +7,11 @@ def validate_name(name):
         return True
     return False
 
+
+def validate_train_number(train_no):
+    """Train number must contain only digits and not be empty."""
+    return train_no.isdigit() and len(train_no) > 0
+
 def validate_email(email):
     """Standard email format."""
     if re.match(r"[^@]+@[^@]+\.[^@]+", email):
@@ -43,3 +48,20 @@ def validate_time_format(time_str):
         return True
     except ValueError:
         return False
+    
+
+from datetime import datetime
+
+def validate_datetime_format(dt_string):
+    try:
+        datetime.strptime(dt_string, "%d-%m-%Y %H:%M")
+        return True
+    except:
+        return False
+
+
+def is_after(previous_dt, new_dt):
+    """Check if new_dt is chronologically after previous_dt."""
+    prev = datetime.strptime(previous_dt, "%d-%m-%Y %H:%M")
+    new = datetime.strptime(new_dt, "%d-%m-%Y %H:%M")
+    return new > prev
